@@ -3,8 +3,20 @@
   "skew_raw": 1.883,
   "skew_log1p": 0.121,
   "mean_price": 180921.19589041095,
-  "max_price": 755000.0,
   "median_price": 163000.0,
+  "max_price": 755000.0,
+  "neighborhood_ratio": 3.4,
+  "qual_peak_step": {
+    "to_grade": 8,
+    "median_growth_pct": 34.8
+  },
+  "qual_median_ratio_1_to_10": 8.62,
+  "qual_pearson_r": 0.791,
+  "qual_spearman_rho": 0.81,
+  "outlier_ids": [
+    524,
+    1299
+  ],
   "corr_with_saleprice": {
     "OverallQual": 0.791,
     "GrLivArea": 0.709,
@@ -19,11 +31,12 @@
     "Fireplaces": 0.467,
     "LotArea": 0.264
   },
-  "top_neighborhood": {
-    "NoRidge": 335295.3,
-    "NridgHt": 316270.6,
-    "StoneBr": 310499.0,
-    "Timber": 242247.4,
-    "Veenker": 238772.7
+  "neighborhood_small_n": {
+    "MeadowV": 17,
+    "BrDale": 16,
+    "Blueste": 2,
+    "NPkVill": 9,
+    "Blmngtn": 17,
+    "Veenker": 11
   }
 }

@@ -1,0 +1,192 @@
+{
+  "name": "Ames Housing — McKinsey Style",
+  "dataColors": [
+    "#DCE6EF",
+    "#C3D4E5",
+    "#AAC2DB",
+    "#91B0D1",
+    "#789EC7",
+    "#5F8CBD",
+    "#4A7BA7",
+    "#376391",
+    "#2A567F",
+    "#1F4E79",
+    "#C8CDD3",
+    "#7B8794",
+    "#B94A48"
+  ],
+  "foreground": "#222222",
+  "foregroundNeutralSecondary": "#5A6470",
+  "foregroundNeutralTertiary": "#8A929B",
+  "background": "#FFFFFF",
+  "backgroundLight": "#F5F6F7",
+  "backgroundNeutral": "#E6E8EB",
+  "tableAccent": "#1F4E79",
+  "good": "#1F4E79",
+  "neutral": "#C8CDD3",
+  "bad": "#B94A48",
+  "maximum": "#1F4E79",
+  "center": "#C8CDD3",
+  "minimum": "#E6E8EB",
+  "textClasses": {
+    "title": {
+      "fontFace": "Malgun Gothic",
+      "fontSize": 14,
+      "color": "#222222"
+    },
+    "header": {
+      "fontFace": "Malgun Gothic",
+      "fontSize": 11,
+      "color": "#222222"
+    },
+    "label": {
+      "fontFace": "Malgun Gothic",
+      "fontSize": 9,
+      "color": "#5A6470"
+    },
+    "callout": {
+      "fontFace": "Malgun Gothic",
+      "fontSize": 32,
+      "color": "#1F4E79"
+    }
+  },
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background": [{ "show": true, "color": { "solid": { "color": "#FFFFFF" } }, "transparency": 0 }],
+        "border": [{ "show": false }],
+        "visualHeader": [{ "show": false }],
+        "title": [
+          {
+            "show": true,
+            "alignment": "left",
+            "fontColor": { "solid": { "color": "#222222" } },
+            "fontSize": 13,
+            "fontFamily": "Malgun Gothic",
+            "bold": true
+          }
+        ],
+        "categoryAxis": [
+          {
+            "showAxisTitle": true,
+            "gridlineShow": false,
+            "labelColor": { "solid": { "color": "#5A6470" } },
+            "fontSize": 9,
+            "fontFamily": "Malgun Gothic",
+            "lineColor": { "solid": { "color": "#E6E8EB" } }
+          }
+        ],
+        "valueAxis": [
+          {
+            "showAxisTitle": false,
+            "gridlineShow": true,
+            "gridlineColor": { "solid": { "color": "#E6E8EB" } },
+            "gridlineThickness": 1,
+            "gridlineStyle": "solid",
+            "labelColor": { "solid": { "color": "#5A6470" } },
+            "fontSize": 9,
+            "fontFamily": "Malgun Gothic",
+            "lineColor": { "solid": { "color": "#E6E8EB" } }
+          }
+        ],
+        "legend": [
+          {
+            "show": true,
+            "position": "TopCenter",
+            "showTitle": false,
+            "labelColor": { "solid": { "color": "#5A6470" } },
+            "fontSize": 9,
+            "fontFamily": "Malgun Gothic"
+          }
+        ],
+        "labels": [
+          {
+            "show": false,
+            "color": { "solid": { "color": "#222222" } },
+            "fontSize": 9,
+            "fontFamily": "Malgun Gothic"
+          }
+        ]
+      }
+    },
+    "card": {
+      "*": {
+        "labels": [
+          {
+            "color": { "solid": { "color": "#1F4E79" } },
+            "fontSize": 34,
+            "fontFamily": "Malgun Gothic",
+            "bold": true
+          }
+        ],
+        "categoryLabels": [
+          {
+            "show": true,
+            "color": { "solid": { "color": "#5A6470" } },
+            "fontSize": 10,
+            "fontFamily": "Malgun Gothic"
+          }
+        ]
+      }
+    },
+    "columnChart": {
+      "*": {
+        "dataPoint": [{ "defaultColor": { "solid": { "color": "#1F4E79" } } }],
+        "categoryAxis": [{ "gridlineShow": false }]
+      }
+    },
+    "barChart": {
+      "*": {
+        "dataPoint": [{ "defaultColor": { "solid": { "color": "#1F4E79" } } }]
+      }
+    },
+    "lineChart": {
+      "*": {
+        "dataPoint": [{ "defaultColor": { "solid": { "color": "#1F4E79" } } }],
+        "lineStyles": [{ "strokeWidth": 2, "lineStyle": "solid" }]
+      }
+    },
+    "scatterChart": {
+      "*": {
+        "fillPoint": [{ "show": true }],
+        "legend": [
+          {
+            "show": true,
+            "position": "TopCenter",
+            "showTitle": true,
+            "titleText": "OverallQual (품질)",
+            "labelColor": { "solid": { "color": "#5A6470" } },
+            "fontSize": 9,
+            "fontFamily": "Malgun Gothic"
+          }
+        ]
+      }
+    },
+    "slicer": {
+      "*": {
+        "items": [
+          {
+            "fontColor": { "solid": { "color": "#222222" } },
+            "fontSize": 9,
+            "fontFamily": "Malgun Gothic"
+          }
+        ],
+        "header": [
+          {
+            "show": true,
+            "fontColor": { "solid": { "color": "#5A6470" } },
+            "fontSize": 10,
+            "fontFamily": "Malgun Gothic",
+            "background": { "solid": { "color": "#FFFFFF" } }
+          }
+        ]
+      }
+    },
+    "page": {
+      "*": {
+        "background": [{ "color": { "solid": { "color": "#FFFFFF" } }, "transparency": 0 }],
+        "outspace": [{ "color": { "solid": { "color": "#FFFFFF" } }, "transparency": 0 }]
+      }
+    }
+  }
+}

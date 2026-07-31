@@ -1,5 +1,7 @@
 {
-  "threshold": 0.8,
+  "threshold_corr": 0.8,
+  "vif_strong_threshold": 10,
+  "n_features_over_vif10_before": 0,
   "collinear_pairs": [
     {
       "공선 쌍": "GarageCars ↔ GarageArea",
@@ -43,5 +45,10 @@
     "LotArea"
   ],
   "max_vif_before": 5.313,
-  "max_vif_after": 2.813
+  "max_vif_after": 2.813,
+  "max_corr_after": 0.63,
+  "sequential_removal_matches": true,
+  "cov_top_feature": "LotArea",
+  "cov_top_value": 209211069.93637323,
+  "cov_top_corr": 0.264
 }

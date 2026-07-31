@@ -4,19 +4,60 @@
 `housePricing_reduced.csv`(1,460행 × 18열, 결측 0)에서 SalePrice와 관련이 큰 feature의 분포·관계를 시각화.
 
 ## 어떻게
-- 실행: `python task1_eda.py` (프로젝트 루트 기준 상대경로로 `../data/housePricing_reduced.csv` 로드, `encoding='utf-8-sig'`)
-- 한글 폰트: Malgun Gothic, `axes.unicode_minus=False`
-- 산출: `images/` 그래프 5종, `eda_summary.txt`(info·describe·결측), `task1_summary.json`(후속 과제 재사용용 요약 지표)
+- 실행: `python task1_eda.py` (`../data/housePricing_reduced.csv` 로드, `encoding='utf-8-sig'`)
+- 산출: `images/` 그래프 6종, `eda_summary.txt`(info + **describe(include='all')** + 결측), `task1_summary.json`
+- 한글 폰트 Malgun Gothic, `axes.unicode_minus=False`
+
+### 시각화 원칙
+보고서 전체가 하나의 문서로 읽히도록 색 언어와 제목 규칙을 통일했다.
+
+| 요소 | 규칙 |
+|---|---|
+| 색 | 회색 `#C8CDD3`(일반 데이터) / 남색 `#1F4E79`(핵심 강조) / 빨강 `#B94A48`(이상치·제거 대상 전용) |
+| 제목 | 차트 종류가 아니라 **데이터에서 확인된 결론**을 서술. 제목의 모든 수치는 코드가 계산한 값을 주입 |
+| 라벨 | 범례 대신 직접 라벨, 금액은 `$335K`로 축약, 표본 수 `n` 명시 |
+| 서식 | 제목 왼쪽 정렬, 상단·우측 테두리 제거, 얇은 격자, 하단에 출처·표본 수 |
 
 ## 결과 요약 및 해석
 
-| 그래프 | 파일 | 해석 |
-|---|---|---|
-| ① SalePrice 히스토그램 + 왜도 | `images/01_saleprice_hist.png` | 원자료 왜도 **1.88**로 오른쪽 꼬리가 김(고가 주택 소수). `log1p` 변환 시 왜도 **0.12**로 거의 정규에 근접 → 선형회귀 가정 충족에 유리. |
-| ② OverallQual별 박스플롯 | `images/02_boxplot_overallqual.png` | 품질 등급이 오를수록 중앙값이 단조 증가하고 산포도 함께 커짐. 품질 8↑ 구간에서 가격 상승 폭이 가팔라짐. |
-| ③ GrLivArea vs SalePrice + 회귀선 | `images/03_scatter_grlivarea.png` | r=0.71의 뚜렷한 양의 선형관계. 우하단에 면적은 크지만 가격이 낮은 이상치 2건(전형적인 Ames 이상치)이 보임. |
-| ④ Neighborhood별 평균가 | `images/04_bar_neighborhood.png` | NoRidge·NridgHt·StoneBr가 상위, MeadowV·IDOTRR·BrDale이 하위. 지역 간 평균가 격차가 3배 이상 → 지역은 강한 설명 변수. |
-| ⑤ (선택) 상관 히트맵 | `images/05_heatmap_corr.png` | OverallQual(0.79)·GrLivArea(0.71)가 최상위. 동시에 GarageCars↔GarageArea 등 설명변수끼리의 강상관도 관측 → 과제 2로 연결. |
+| # | 파일 | 제목(= 결론) | 근거 |
+|---|---|---|---|
+| ① | `01_saleprice_hist.png` | 로그 변환으로 고가 주택이 만든 오른쪽 꼬리 해소 — 왜도 **1.88 → 0.12 감소** | log1p 후 좌우 대칭에 근접 → 선형회귀의 정규성 가정에 유리 |
+| ② | `02_boxplot_overallqual.png` | 품질 **7→8 구간에서 가격 중앙값 35% 급등** — 전 구간 최대 상승폭 | 등급별 중앙값 증가율 중 최대. 등급이 오를수록 분산도 함께 확대 |
+| ②-B | `02b_qual_median_range.png` | 품질 1→10 구간 가격 중앙값 **8.6배 상승** — 전 등급 단조 증가 | 중앙값 $50K → $432K, 10개 등급 모두 예외 없이 증가. Spearman ρ = 0.81 |
+| ③ | `03_scatter_grlivarea.png` | 면적 클수록 판매가 상승(r=0.71) — **최고급 대형 주택 2건은 시세 절반 수준 거래** | Id 524·1299 — 둘 다 품질 10인데 4,676/5,642 sqft에 $185K/$160K. Ames의 알려진 부분매매 케이스 |
+| ④ | `04_bar_neighborhood.png` | 같은 도시 안에서 지역 간 평균 판매가 최대 **3.4배 격차** | NoRidge $335K ↔ MeadowV $99K. 전체 평균 $181K 기준선 표시 |
+| ⑤ | `05_corr_ranking.png` | SalePrice 설명력 최상위 — **OverallQual 0.79 · GrLivArea 0.71** | 수치형 12종 상관 랭킹. 과제 3의 핵심 입력 변수 근거 |
+| ⑤-B | `06_heatmap_core.png` | 설명변수 **3쌍 \|r\| ≥ 0.8 중복** — 과제 2 제거 대상 | 상관 상위 8개로 축약, \|r\|≥0.5만 수치 표기, 0.8 이상 셀만 빨간 테두리 |
+
+### ②와 ②-B의 역할 분담
+문제지가 "OverallQual별 SalePrice **박스플롯**"을 명시했으므로 ②(박스플롯)는 제출용 기본 그래프로 그대로 둔다.
+다만 박스플롯은 상자 위치·중앙값·상자 길이·수염·이상치를 한꺼번에 읽어야 해서 "품질이 오르면 가격이 오른다"는 **결론 전달**에는 정보가 과하다.
+그래서 박스·수염·이상치를 걷어내고 **중앙값(점) + 중간 50% 범위(세로선) + 진행 방향(연결선)** 만 남긴 축약 버전을 ②-B로 추가했다. 발표·보고용 핵심 차트는 ②-B를 쓴다.
+
+### OverallQual의 상관계수 — Pearson과 Spearman
+OverallQual은 연속 측정값이 아니라 **1~10 순서형 등급**이다. "등급이 오를수록 가격이 단조롭게 상승하는가"를 보려면 순위 기반 지표가 더 자연스럽다.
+
+| 지표 | 값 | 의미 |
+|---|---:|---|
+| Pearson r | 0.79 | 선형 관계의 강도 |
+| **Spearman ρ** | **0.81** | 단조 증가 관계의 강도 (순위 기반) |
+
+ρ가 r보다 높다는 것은 관계가 **완벽한 직선은 아니지만 순서는 예외 없이 지켜진다**는 뜻이다.
+실제로 등급 1~10의 중앙값은 $50K → $432K로 한 번도 꺾이지 않고 증가한다(단조 증가).
+등급 간 간격이 동일하다는 보장은 없으므로, ②-B의 연결선은 인과·연속성이 아니라 **진행 방향을 돕는 보조선**으로 읽어야 한다.
+
+### 해석 시 주의 — 표본이 적은 지역
+④에서 표본 20건 미만 지역 6곳(Blueste **n=2**, NPkVill n=9, Veenker n=11, BrDale n=16, Blmngtn n=17, MeadowV n=17)은
+평균이 불안정하므로 라벨을 회색 처리하고 강조 색에서 제외했다.
+특히 Veenker는 평균 $239K로 상위권에 보이지만 표본 11건이라 순위를 단정하면 안 된다.
+
+②의 "7→8 구간" 판정도 **표본 50건 이상인 등급 구간에서만** 계산했다.
+전체 등급으로 계산하면 2→3 구간이 43.8%로 최대가 되지만, 해당 등급 표본이 각각 3건·20건이라 우연에 좌우되기 때문이다.
 
 ## SalePrice 상관 상위
 OverallQual 0.79 · GrLivArea 0.71 · GarageCars 0.64 · GarageArea 0.62 · TotalBsmtSF 0.61 · 1stFlrSF 0.61 · FullBath 0.56 · TotRmsAbvGrd 0.53
+
+## 원본 대비 감축 검증
+`data/housePricing_train.csv`(원본 1,460 × 81)와 대조한 결과, 감축본의 18개 컬럼은 원본의 부분집합이며 행 값도 완전히 동일하다.
+원본의 결측 상위 컬럼(PoolQC 99.5%, MiscFeature 96.3%, Alley 93.8%, Fence 80.8%)은 문제지 1.1의 "결측 50% 이상 제외" 원칙대로 모두 제거되어 있다.

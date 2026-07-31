@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ames 주택 가격 대시보드 + Ollama 채팅</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="data.js"></script>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#171d2c; --panel2:#1d2436; --line:#2a3244;
+    --tx:#e8ecf5; --tx-dim:#93a0b8;
+    --c1:#5b9bd5; --c2:#8a94a6; --c3:#6b7688; --c4:#d2696b; --c5:#3f4c61;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);
+       font-family:"Segoe UI","Malgun Gothic",system-ui,sans-serif;}
+  header{padding:26px 32px 14px;border-bottom:1px solid var(--line)}
+  h1{margin:0;font-size:22px;letter-spacing:-.3px}
+  .sub{margin-top:6px;color:var(--tx-dim);font-size:13px}
+  main{padding:22px 32px 48px;max-width:1280px;margin:0 auto}
+  .filters{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx-dim)}
+  select,button,input,textarea{background:var(--panel2);color:var(--tx);border:1px solid var(--line);
+    border-radius:8px;padding:9px 12px;font-size:14px;font-family:inherit}
+  select{min-width:190px}
+  button{cursor:pointer}
+  button:hover{border-color:var(--c1)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-bottom:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .kpi .k-label{font-size:12px;color:var(--tx-dim);letter-spacing:.04em}
+  .kpi .k-value{font-size:30px;font-weight:650;margin-top:8px;letter-spacing:-.5px}
+  .kpi .k-note{font-size:12px;color:var(--tx-dim);margin-top:6px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid .wide{grid-column:1 / -1}
+  .card h2{margin:0 0 4px;font-size:15px;font-weight:600}
+  .card .hint{margin:0 0 12px;font-size:12px;color:var(--tx-dim)}
+  .grid > *{min-width:0}
+  .chart-box{position:relative;height:320px;width:100%;min-width:0}
+  .chart-box canvas{max-width:100%!important}
+  .empty{color:var(--c4);font-size:13px;margin-top:8px}
+  footer{color:var(--tx-dim);font-size:12px;margin-top:22px;line-height:1.7}
+
+  /* ---- 채팅 ---- */
+  #chat-card{margin-top:16px}
+  .chat-cfg{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px}
+  .chat-cfg input{width:200px}
+  .chat-log{background:var(--bg);border:1px solid var(--line);border-radius:12px;
+    height:320px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+  .msg{max-width:82%;padding:10px 13px;border-radius:12px;font-size:14px;line-height:1.6;
+       white-space:pre-wrap;word-break:break-word}
+  .msg.user{align-self:flex-end;background:var(--c1);color:#fff;border-bottom-right-radius:4px}
+  .msg.bot{align-self:flex-start;background:var(--panel2);border:1px solid var(--line);border-bottom-left-radius:4px}
+  .msg.sys{align-self:stretch;background:rgba(226,101,122,.12);border:1px solid rgba(226,101,122,.45);
+           color:#ffd7dd;font-size:13px;max-width:100%}
+  .msg.sys code{background:rgba(0,0,0,.35);padding:2px 6px;border-radius:5px;
+                display:inline-block;margin:2px 0;font-size:12px}
+  .msg .who{display:block;font-size:11px;opacity:.75;margin-bottom:4px}
+  .chat-input{display:flex;gap:10px;margin-top:12px}
+  .chat-input textarea{flex:1;resize:vertical;min-height:46px;max-height:160px}
+  .chat-suggest{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .chat-suggest button{font-size:12px;padding:6px 10px;border-radius:999px;color:var(--tx-dim)}
+  .ctx-preview{margin-top:12px}
+  .ctx-preview summary{cursor:pointer;font-size:12px;color:var(--tx-dim)}
+  .ctx-preview pre{background:var(--bg);border:1px solid var(--line);border-radius:10px;
+    padding:12px;font-size:11.5px;color:var(--tx-dim);overflow:auto;max-height:240px;white-space:pre-wrap}
+  @media(max-width:880px){.grid{grid-template-columns:1fr}main,header{padding-left:16px;padding-right:16px}}
+  .qual-legend{display:flex;align-items:center;gap:8px;margin:-2px 0 6px;
+    font-size:11px;color:var(--tx-dim)}
+  .qual-ramp{flex:1;max-width:190px;height:8px;border-radius:4px;
+    background:linear-gradient(90deg,rgb(46,68,92),rgb(138,200,255))}
+</style>
+</head>
+<body>
+<header>
+  <h1>Ames 주택 가격 대시보드 <span style="color:var(--c2)">+ Ollama LLM 채팅</span></h1>
+  <div class="sub">housePricing_selected.csv · 1,460건 · 로컬 Ollama(http://localhost:11434)에 대시보드 요약 통계를 함께 전달합니다</div>
+</header>
+
+<main>
+  <div class="filters">
+    <div class="field">
+      <label for="f-nb">지역 (Neighborhood)</label>
+      <select id="f-nb"></select>
+    </div>
+    <div class="field">
+      <label for="f-q">전반적 품질 (OverallQual)</label>
+      <select id="f-q"></select>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <button id="f-reset" type="button">필터 초기화</button>
+    </div>
+    <div class="field" style="margin-left:auto">
+      <label>선택된 표본</label>
+      <div id="f-count" style="font-size:15px;padding-bottom:9px">-</div>
+    </div>
+  </div>
+
+  <section class="kpis">
+    <div class="card kpi"><div class="k-label">평균 판매가</div>
+      <div class="k-value" id="kpi-mean">-</div><div class="k-note" id="kpi-mean-note"></div></div>
+    <div class="card kpi"><div class="k-label">최고 판매가</div>
+      <div class="k-value" id="kpi-max">-</div><div class="k-note" id="kpi-max-note"></div></div>
+    <div class="card kpi"><div class="k-label">주택 수</div>
+      <div class="k-value" id="kpi-n">-</div><div class="k-note" id="kpi-n-note"></div></div>
+  </section>
+
+  <section class="grid">
+    <div class="card wide">
+      <h2>지역별 평균 판매가</h2>
+      <p class="hint">필터 적용 결과 기준, 평균가 내림차순 (표본 수 표시)</p>
+      <div class="chart-box"><canvas id="ch-nb"></canvas></div>
+      <div class="empty" id="ch-nb-empty"></div>
+    </div>
+
+    <div class="card">
+      <h2>거주면적(GrLivArea) vs 판매가</h2>
+      <p class="hint">개별 주택 산점도 · 전체 상관 r = 0.71 · 색 = OverallQual(품질)</p>
+      <div class="qual-legend">
+        <span>품질 낮음</span>
+        <i class="qual-ramp"></i>
+        <span>높음</span>
+      </div>
+      <div class="chart-box"><canvas id="ch-sc"></canvas></div>
+      <div class="empty" id="ch-sc-empty"></div>
+    </div>
+
+    <div class="card">
+      <h2>OverallQual별 가격 분포</h2>
+      <p class="hint">막대 = 1사분위~3사분위 구간, 점 = 중앙값</p>
+      <div class="chart-box"><canvas id="ch-q"></canvas></div>
+      <div class="empty" id="ch-q-empty"></div>
+    </div>
+  </section>
+
+  <section class="card" id="chat-card">
+    <h2>데이터 어시스턴트 (Ollama)</h2>
+    <p class="hint">질문 시 현재 필터 상태와 요약 통계가 system 프롬프트로 함께 전송됩니다. 모든 요청은 로컬 PC 안에서만 처리되며 API 키는 필요하지 않습니다.</p>
+
+    <div class="chat-cfg">
+      <div class="field">
+        <label for="c-model">모델</label>
+        <input id="c-model" list="model-list" value="gpt-oss:20b" spellcheck="false">
+        <datalist id="model-list">
+          <option value="gpt-oss:20b"><option value="llama3.1"><option value="llama3.2">
+          <option value="gemma3"><option value="qwen2.5"><option value="mistral">
+        </datalist>
+      </div>
+      <div class="field">
+        <label for="c-host">Ollama 주소</label>
+        <input id="c-host" value="http://localhost:11434" spellcheck="false" style="width:230px">
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <button id="c-ping" type="button">연결 확인</button>
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <button id="c-clear" type="button">대화 지우기</button>
+      </div>
+    </div>
+
+    <div class="chat-log" id="chat-log"></div>
+
+    <div class="chat-input">
+      <textarea id="c-input" rows="2" placeholder="예) 지금 필터에서 가격을 올리는 요인은 뭐야? (Enter 전송 / Shift+Enter 줄바꿈)"></textarea>
+      <button id="c-send" type="button" style="align-self:stretch;padding:0 20px">전송</button>
+    </div>
+
+    <div class="chat-suggest">
+      <button type="button" data-q="현재 필터 기준으로 핵심 인사이트 3가지를 알려줘.">핵심 인사이트 3가지</button>
+      <button type="button" data-q="이 지역/품질 조건의 평균가가 전체 평균과 왜 다를 수 있는지 설명해줘.">평균가 차이 해석</button>
+      <button type="button" data-q="집값을 올리는 상위 요인과 그 이유를 초보자에게 설명해줘.">가격 상승 요인</button>
+      <button type="button" data-q="다중공선성 때문에 제거한 변수들이 왜 문제였는지 설명해줘.">다중공선성 설명</button>
+    </div>
+
+    <details class="ctx-preview">
+      <summary>LLM 에 전달되는 system 프롬프트 미리보기</summary>
+      <pre id="ctx-pre"></pre>
+    </details>
+  </section>
+
+  <footer>
+    데이터: Kaggle House Prices (Ames, Iowa) · SalePrice 왜도 1.88(우편향) · 상관 상위 OverallQual 0.79 · GrLivArea 0.71 · GarageCars 0.64 · TotalBsmtSF 0.61<br>
+    Ollama 실행(명령 프롬프트): <code>set OLLAMA_ORIGINS=* &amp;&amp; ollama serve</code> · 모델 내려받기: <code>ollama pull gpt-oss:20b</code>
+  </footer>
+</main>
+
+<script>
+/* ================= 대시보드 (과제 6과 동일 로직) ================= */
+const fmtUSD = n => '$' + Math.round(n).toLocaleString('en-US');
+const fmtShort = n => n >= 1000 ? '$' + Math.round(n/1000) + 'k' : '$' + Math.round(n);
+const mean = a => a.reduce((s,v)=>s+v,0)/a.length;
+function quantile(sorted, p){
+  if(!sorted.length) return 0;
+  const i = (sorted.length-1)*p, lo = Math.floor(i), hi = Math.ceil(i);
+  return sorted[lo] + (sorted[hi]-sorted[lo])*(i-lo);
+}
+// 색 규칙 (과제 1·2·3 파이썬 차트와 동일한 언어 · 다크 배경용 명도 조정)
+//   ACCENT 남색  : 핵심 강조 / NEUTRAL 회색 : 일반 데이터 / ALERT 빨강 : 이상치
+const ACCENT='#5b9bd5', ACCENT_DIM='rgba(91,155,213,.55)',
+      NEUTRAL='#5b6577', NEUTRAL_DIM='rgba(138,148,166,.45)', ALERT='#d2696b';
+const PALETTE = [ACCENT, NEUTRAL, NEUTRAL, NEUTRAL, NEUTRAL];
+const TOP_N = 3;   // 상위 N개 지역만 강조
+
+// 산점도용 단일 색조(청색) 순차 스케일 — OverallQual 1~10을 명도로 인코딩.
+// 무지개 대신 한 계열만 써서 '진할수록 고품질'이 직관적으로 읽히게 한다.
+const QUAL_MIN = [ 46,  68,  92];   // 어두운 청회색 (품질 낮음)
+const QUAL_MAX = [138, 200, 255];   // 밝은 하늘색   (품질 높음)
+function qualColor(q, alpha){
+  const t = Math.max(0, Math.min(1, (q - 1) / 9));
+  const c = QUAL_MIN.map((v,i) => Math.round(v + (QUAL_MAX[i] - v) * t));
+  return `rgba(${c[0]},${c[1]},${c[2]},${alpha === undefined ? 0.62 : alpha})`;
+}
+
+Chart.defaults.color = '#93a0b8';
+Chart.defaults.font.family = '"Segoe UI","Malgun Gothic",system-ui,sans-serif';
+Chart.defaults.borderColor = 'rgba(255,255,255,.06)';
+
+const META = DASH_DATA.meta, ROWS = DASH_DATA.rows;
+
+const elNb = document.getElementById('f-nb'), elQ = document.getElementById('f-q');
+elNb.innerHTML = '<option value="ALL">전체 지역</option>' +
+  META.neighborhoods.map(n=>`<option value="${n}">${n}</option>`).join('');
+elQ.innerHTML = '<option value="ALL">전체 품질</option>' +
+  META.qualities.map(q=>`<option value="${q}">품질 ${q}</option>`).join('');
+
+const currentFilter = () => ({neighborhood: elNb.value, overallQual: elQ.value});
+function filteredRows(){
+  const f = currentFilter();
+  return ROWS.filter(r =>
+    (f.neighborhood==='ALL' || r.Neighborhood===f.neighborhood) &&
+    (f.overallQual==='ALL'  || String(r.OverallQual)===f.overallQual));
+}
+
+const baseOpts = {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+  scales:{x:{grid:{color:'rgba(255,255,255,.05)'}},y:{grid:{color:'rgba(255,255,255,.05)'}}}};
+
+const chNb = new Chart(document.getElementById('ch-nb'), {
+  type:'bar',
+  data:{labels:[],datasets:[{label:'평균 판매가',data:[],backgroundColor:ACCENT,borderRadius:3}]},
+  options:{...baseOpts,
+    plugins:{legend:{display:false},tooltip:{callbacks:{
+      label:c=>`평균 ${fmtUSD(c.parsed.y)} · n=${c.dataset.counts[c.dataIndex]}`}}},
+    scales:{x:{ticks:{maxRotation:70,minRotation:45,font:{size:10}},grid:{display:false}},
+            y:{ticks:{callback:fmtShort},grid:{color:'rgba(255,255,255,.05)'}}}}
+});
+const chSc = new Chart(document.getElementById('ch-sc'), {
+  type:'scatter',
+  data:{datasets:[{label:'주택',data:[],backgroundColor:NEUTRAL_DIM,pointRadius:2.6}]},
+  options:{...baseOpts,
+    plugins:{legend:{display:false},tooltip:{callbacks:{
+      label:c=>`${c.parsed.x} sqft · ${fmtUSD(c.parsed.y)} · 품질 ${c.raw.q}`}}},
+    scales:{x:{title:{display:true,text:'GrLivArea (sqft)'},grid:{color:'rgba(255,255,255,.05)'}},
+            y:{title:{display:true,text:'SalePrice'},ticks:{callback:fmtShort},grid:{color:'rgba(255,255,255,.05)'}}}}
+});
+const chQ = new Chart(document.getElementById('ch-q'), {
+  data:{labels:[],datasets:[
+    {type:'bar',label:'Q1~Q3',data:[],backgroundColor:NEUTRAL_DIM,
+     borderColor:NEUTRAL,borderWidth:1,borderSkipped:false,borderRadius:3},
+    {type:'line',label:'중앙값',data:[],borderColor:ACCENT,backgroundColor:ACCENT,
+     showLine:false,pointRadius:5,pointStyle:'rectRot'}
+  ]},
+  options:{...baseOpts,
+    plugins:{legend:{display:true,labels:{usePointStyle:true,boxWidth:8}},
+      tooltip:{callbacks:{label:c=> c.datasetIndex===0
+        ? `Q1 ${fmtUSD(c.raw[0])} ~ Q3 ${fmtUSD(c.raw[1])}`
+        : `중앙값 ${fmtUSD(c.raw)}`}}},
+    scales:{x:{title:{display:true,text:'OverallQual'},grid:{display:false}},
+            y:{ticks:{callback:fmtShort},grid:{color:'rgba(255,255,255,.05)'}}}}
+});
+
+function computeSummary(rows){
+  if(!rows.length) return {n:0};
+  const p = rows.map(r=>r.SalePrice).sort((a,b)=>a-b);
+  const byNb = {}; rows.forEach(r=>{(byNb[r.Neighborhood] ||= []).push(r.SalePrice);});
+  const nbStats = Object.entries(byNb).map(([k,v])=>({name:k,avg:mean(v),n:v.length}))
+    .sort((a,b)=>b.avg-a.avg);
+  const byQ = {}; rows.forEach(r=>{(byQ[r.OverallQual] ||= []).push(r.SalePrice);});
+  const qStats = Object.keys(byQ).map(Number).sort((a,b)=>a-b).map(q=>{
+    const s = byQ[q].slice().sort((a,b)=>a-b);
+    return {qual:q,n:s.length,q1:quantile(s,.25),med:quantile(s,.5),q3:quantile(s,.75)};
+  });
+  const areas = rows.map(r=>r.GrLivArea);
+  return {n:rows.length, mean:mean(p), max:p[p.length-1], min:p[0], median:quantile(p,.5),
+          meanArea:mean(areas), nbStats, qStats};
+}
+
+function render(){
+  const rows = filteredRows(), s = computeSummary(rows), f = currentFilter();
+  document.getElementById('f-count').textContent =
+    `${rows.length.toLocaleString()} / ${META.nRows.toLocaleString()} 건`;
+
+  if(!s.n){
+    ['kpi-mean','kpi-max','kpi-n'].forEach(id=>document.getElementById(id).textContent='–');
+    document.getElementById('kpi-mean-note').textContent='조건에 맞는 주택이 없습니다';
+    document.getElementById('kpi-max-note').textContent='';
+    document.getElementById('kpi-n-note').textContent='';
+    chNb.data.labels=[]; chNb.data.datasets[0].data=[]; chNb.data.datasets[0].counts=[]; chNb.update();
+    chSc.data.datasets[0].data=[]; chSc.update();
+    chQ.data.labels=[]; chQ.data.datasets[0].data=[]; chQ.data.datasets[1].data=[]; chQ.update();
+    ['ch-nb-empty','ch-sc-empty','ch-q-empty'].forEach(id=>
+      document.getElementById(id).textContent='선택한 필터에 해당하는 데이터가 없습니다.');
+  } else {
+    ['ch-nb-empty','ch-sc-empty','ch-q-empty'].forEach(id=>document.getElementById(id).textContent='');
+    document.getElementById('kpi-mean').textContent = fmtUSD(s.mean);
+    document.getElementById('kpi-mean-note').textContent =
+      `전체 평균 ${fmtUSD(META.meanPrice)} 대비 ${((s.mean/META.meanPrice-1)*100).toFixed(1)}% · 중앙값 ${fmtUSD(s.median)}`;
+    document.getElementById('kpi-max').textContent = fmtUSD(s.max);
+    document.getElementById('kpi-max-note').textContent = `최저 ${fmtUSD(s.min)}`;
+    document.getElementById('kpi-n').textContent = s.n.toLocaleString()+' 건';
+    document.getElementById('kpi-n-note').textContent =
+      `전체 ${META.nRows.toLocaleString()}건의 ${(s.n/META.nRows*100).toFixed(1)}%`;
+
+    const top = s.nbStats.slice(0,20);
+    chNb.data.labels = top.map(d=>d.name);
+    chNb.data.datasets[0].data = top.map(d=>Math.round(d.avg));
+    chNb.data.datasets[0].counts = top.map(d=>d.n);
+    chNb.data.datasets[0].backgroundColor = top.map((_,i)=>i < TOP_N ? ACCENT : NEUTRAL);
+    chNb.update();
+    chSc.data.datasets[0].data = rows.map(r=>({x:r.GrLivArea,y:r.SalePrice,q:r.OverallQual}));
+  chSc.data.datasets[0].backgroundColor = rows.map(r=>qualColor(r.OverallQual));
+    chSc.update();
+    chQ.data.labels = s.qStats.map(d=>d.qual);
+    chQ.data.datasets[0].data = s.qStats.map(d=>[Math.round(d.q1),Math.round(d.q3)]);
+    chQ.data.datasets[1].data = s.qStats.map(d=>Math.round(d.med));
+    chQ.update();
+  }
+  window.DASH_STATE = {filter:f, summary:s};
+  document.getElementById('ctx-pre').textContent = buildSystemPrompt();
+}
+
+elNb.addEventListener('change', render);
+elQ.addEventListener('change', render);
+document.getElementById('f-reset').addEventListener('click', ()=>{elNb.value='ALL';elQ.value='ALL';render();});
+
+/* ================= Ollama 채팅 ================= */
+const logEl = document.getElementById('chat-log');
+const inputEl = document.getElementById('c-input');
+const sendBtn = document.getElementById('c-send');
+const modelEl = document.getElementById('c-model');
+const hostEl = document.getElementById('c-host');
+let history = [];   // {role, content} - system 은 매 요청마다 새로 생성
+
+function buildSystemPrompt(){
+  const st = window.DASH_STATE || {filter:currentFilter(), summary:computeSummary(filteredRows())};
+  const f = st.filter, s = st.summary;
+  const drivers = META.topDrivers.map(d=>`${d.feature}(r=${d.r})`).join(', ');
+  const dropped = META.droppedCollinear.map(d=>`${d.feature}(${d.reason})`).join(', ');
+  const lines = [
+    '너는 미국 Ames(아이오와) 주택 가격 데이터를 설명하는 데이터 분석 어시스턴트다.',
+    '아래 대시보드 통계만 근거로 삼아 한국어로 간결하게(5문장 내외) 답하고, 숫자는 통계에서 인용해라.',
+    '주어진 통계로 알 수 없는 것은 모른다고 말해라. 개별 주택 매매 조언은 하지 마라.',
+    '',
+    '[데이터셋 전체]',
+    `- 출처: ${META.source}, 총 ${META.nRows}건`,
+    `- SalePrice 평균 ${fmtUSD(META.meanPrice)}, 최저 ${fmtUSD(META.minPrice)}, 최고 ${fmtUSD(META.maxPrice)}, 표준편차 ${fmtUSD(META.sdPrice)}, 왜도 ${META.skewPrice}(우편향)`,
+    `- SalePrice 상관 상위 요인: ${drivers}`,
+    `- 다중공선성으로 제거된 변수: ${dropped}`,
+    '',
+    '[현재 대시보드 필터]',
+    `- 지역(Neighborhood): ${f.neighborhood==='ALL' ? '전체' : f.neighborhood}`,
+    `- 전반적 품질(OverallQual): ${f.overallQual==='ALL' ? '전체' : f.overallQual}`,
+  ];
+  if(!s.n){
+    lines.push('- 현재 필터에 해당하는 주택이 0건이다.');
+  } else {
+    lines.push(
+      '',
+      '[현재 필터 기준 요약]',
+      `- 주택 수 ${s.n}건 (전체의 ${(s.n/META.nRows*100).toFixed(1)}%)`,
+      `- 평균가 $${Math.round(s.mean).toLocaleString()} (전체 평균 대비 ${((s.mean/META.meanPrice-1)*100).toFixed(1)}%), 중앙값 $${Math.round(s.median).toLocaleString()}`,
+      `- 최저 $${s.min.toLocaleString()} ~ 최고 $${s.max.toLocaleString()}, 평균 거주면적 ${Math.round(s.meanArea)} sqft`,
+      `- 평균가 상위 지역: ${s.nbStats.slice(0,5).map(d=>`${d.name} $${Math.round(d.avg).toLocaleString()}(n=${d.n})`).join(', ')}`,
+      `- 품질별 중앙값: ${s.qStats.map(d=>`Q${d.qual} $${Math.round(d.med).toLocaleString()}(n=${d.n})`).join(', ')}`
+    );
+  }
+  return lines.join('\n');
+}
+
+function addMsg(role, text){
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  if(role === 'sys'){
+    div.innerHTML = text;
+  } else {
+    const who = document.createElement('span');
+    who.className = 'who';
+    who.textContent = role === 'user' ? '나' : `${modelEl.value} (Ollama)`;
+    div.appendChild(who);
+    div.appendChild(document.createTextNode(text));
+  }
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+  return div;
+}
+
+function guideHtml(detail){
+  const host = hostEl.value.trim();
+  return `<b>Ollama 서버에 연결하지 못했습니다.</b><br>
+아래를 순서대로 확인해 주세요.<br><br>
+1) Ollama 설치 및 모델 내려받기<br>
+<code>ollama pull ${modelEl.value || 'gpt-oss:20b'}</code><br>
+2) <b>브라우저에서 호출하려면 CORS 허용이 필요합니다.</b> 실행 중인 Ollama 를 완전히 종료한 뒤,
+명령 프롬프트(cmd)에서 아래를 그대로 실행하세요.<br>
+<code>set OLLAMA_ORIGINS=* &amp;&amp; ollama serve</code><br>
+3) 브라우저에서 <code>${host}/api/tags</code> 가 열리는지 확인<br>
+4) 위 &lt;모델&gt; 칸의 이름이 실제 설치된 모델과 같은지 확인<br><br>
+<span style="opacity:.75">상세: ${String(detail).replace(/[<>&]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</span>`;
+}
+
+async function ping(){
+  const host = hostEl.value.trim().replace(/\/$/,'');
+  try{
+    const res = await fetch(host + '/api/tags');
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const j = await res.json();
+    const names = (j.models||[]).map(m=>m.name).join(', ') || '(설치된 모델 없음)';
+    addMsg('bot', `Ollama 연결 성공. 사용 가능한 모델: ${names}`);
+  }catch(e){
+    addMsg('sys', guideHtml(e && e.message ? e.message : e));
+  }
+}
+
+/* gpt-oss 계열은 content 가 비고 thinking/reasoning 에 내용이 들어오는 경우가 있어
+   여러 필드를 순서대로 확인한다. */
+function extractAnswer(data){
+  const m = (data && data.message) || {};
+  const cands = [m.content, m.thinking, m.reasoning, m.reasoning_content,
+                 data && data.response];
+  for(const c of cands){
+    if(typeof c === 'string' && c.trim()) return c.trim();
+    if(Array.isArray(c)){                       // [{type:'text',text:'...'}] 형태 대비
+      const joined = c.map(p => (typeof p === 'string' ? p : (p && (p.text || p.content)) || ''))
+                      .join('').trim();
+      if(joined) return joined;
+    }
+  }
+  return '(모델이 빈 응답을 반환했습니다. 원본: ' +
+         JSON.stringify(data).slice(0, 300) + ')';
+}
+
+async function send(text){
+  text = (text ?? inputEl.value).trim();
+  if(!text) return;
+  const host = hostEl.value.trim().replace(/\/$/,'');
+  const model = modelEl.value.trim() || 'gpt-oss:20b';
+
+  addMsg('user', text);
+  inputEl.value = '';
+  history.push({role:'user', content:text});
+  sendBtn.disabled = true;
+  const pending = addMsg('bot', '생각 중...');
+
+  const body = {
+    model,
+    stream: false,
+    messages: [{role:'system', content: buildSystemPrompt()}, ...history.slice(-8)]
+  };
+
+  try{
+    const res = await fetch(host + '/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if(!res.ok){
+      const t = await res.text().catch(()=> '');
+      throw new Error(`HTTP ${res.status} ${res.statusText} ${t.slice(0,200)}`);
+    }
+    const data = await res.json();
+    const answer = extractAnswer(data);
+    pending.remove();
+    addMsg('bot', answer);
+    history.push({role:'assistant', content:answer});
+  }catch(err){
+    pending.remove();
+    addMsg('sys', guideHtml(err && err.message ? err.message : err));
+    history.pop();   // 실패한 질문은 히스토리에서 제거
+  }finally{
+    sendBtn.disabled = false;
+    inputEl.focus();
+  }
+}
+
+sendBtn.addEventListener('click', ()=>send());
+inputEl.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); }
+});
+document.getElementById('c-ping').addEventListener('click', ping);
+document.getElementById('c-clear').addEventListener('click', ()=>{
+  history = []; logEl.innerHTML = ''; welcome();
+});
+document.querySelectorAll('.chat-suggest button').forEach(b=>
+  b.addEventListener('click', ()=>send(b.dataset.q)));
+
+function welcome(){
+  addMsg('bot', '안녕하세요. 현재 대시보드 필터와 요약 통계를 참고해서 답변합니다. 아래 예시 질문을 눌러보거나 직접 질문해 주세요.\n※ 로컬 Ollama 서버(http://localhost:11434)가 실행 중이어야 합니다.');
+}
+
+render();
+welcome();
+</script>
+</body>
+</html>
