@@ -1,0 +1,29 @@
+{
+  "n_rows": 1460,
+  "skew_raw": 1.883,
+  "skew_log1p": 0.121,
+  "mean_price": 180921.19589041095,
+  "max_price": 755000.0,
+  "median_price": 163000.0,
+  "corr_with_saleprice": {
+    "OverallQual": 0.791,
+    "GrLivArea": 0.709,
+    "GarageCars": 0.64,
+    "GarageArea": 0.623,
+    "TotalBsmtSF": 0.614,
+    "1stFlrSF": 0.606,
+    "FullBath": 0.561,
+    "TotRmsAbvGrd": 0.534,
+    "YearBuilt": 0.523,
+    "YearRemodAdd": 0.507,
+    "Fireplaces": 0.467,
+    "LotArea": 0.264
+  },
+  "top_neighborhood": {
+    "NoRidge": 335295.3,
+    "NridgHt": 316270.6,
+    "StoneBr": 310499.0,
+    "Timber": 242247.4,
+    "Veenker": 238772.7
+  }
+}

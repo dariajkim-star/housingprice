@@ -1,0 +1,47 @@
+{
+  "threshold": 0.8,
+  "collinear_pairs": [
+    {
+      "공선 쌍": "GarageCars ↔ GarageArea",
+      "r": 0.882,
+      "유지": "GarageCars",
+      "r(유지, SalePrice)": 0.64,
+      "제거": "GarageArea",
+      "r(제거, SalePrice)": 0.623
+    },
+    {
+      "공선 쌍": "GrLivArea ↔ TotRmsAbvGrd",
+      "r": 0.825,
+      "유지": "GrLivArea",
+      "r(유지, SalePrice)": 0.709,
+      "제거": "TotRmsAbvGrd",
+      "r(제거, SalePrice)": 0.534
+    },
+    {
+      "공선 쌍": "TotalBsmtSF ↔ 1stFlrSF",
+      "r": 0.82,
+      "유지": "TotalBsmtSF",
+      "r(유지, SalePrice)": 0.614,
+      "제거": "1stFlrSF",
+      "r(제거, SalePrice)": 0.606
+    }
+  ],
+  "dropped_features": [
+    "GarageArea",
+    "TotRmsAbvGrd",
+    "1stFlrSF"
+  ],
+  "kept_numeric_features": [
+    "OverallQual",
+    "GrLivArea",
+    "GarageCars",
+    "TotalBsmtSF",
+    "FullBath",
+    "YearBuilt",
+    "YearRemodAdd",
+    "Fireplaces",
+    "LotArea"
+  ],
+  "max_vif_before": 5.313,
+  "max_vif_after": 2.813
+}

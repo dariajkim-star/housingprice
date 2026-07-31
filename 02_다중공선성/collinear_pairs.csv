@@ -1,0 +1,4 @@
+﻿공선 쌍,r,유지,"r(유지, SalePrice)",제거,"r(제거, SalePrice)"
+GarageCars ↔ GarageArea,0.882,GarageCars,0.64,GarageArea,0.623
+GrLivArea ↔ TotRmsAbvGrd,0.825,GrLivArea,0.709,TotRmsAbvGrd,0.534
+TotalBsmtSF ↔ 1stFlrSF,0.82,TotalBsmtSF,0.614,1stFlrSF,0.606
