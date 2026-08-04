@@ -89,3 +89,21 @@ set OLLAMA_ORIGINS=* && ollama serve
 ├─ images/dashboard_chat.png   실행 화면 (서버 미연결 안내 노출 상태)
 └─ README.md
 ```
+
+
+---
+
+## 제출물 캡처 (2026-08-04 확보)
+
+| 파일 | 내용 |
+|---|---|
+| `images/dashboard_chat.png` | 대시보드 전체 + Q&A 2건이 표시된 채팅 영역 |
+| `images/chat_qa.png` | 채팅 대화 영역 확대 |
+| `qa_transcript.md` | 응답 전문 + 인용 수치 검증표 (gpt-oss:20b · llama3.2:latest 양쪽) |
+
+**모델 2종 모두 동작 확인**
+- `gpt-oss:20b` — 응답 2건 성공. CPU 추론(14.4GB 중 VRAM 2.3GB)이라 건당 2~6분
+- `llama3.2:latest` — 동일 프롬프트로 25초 / 28초 응답. 화면 캡처는 이 모델 기준
+
+모델은 대시보드 UI의 **모델 입력칸에서 즉시 교체** 가능하며, 두 모델 모두
+필터 상태(NridgHt)와 해당 지역 통계를 정확히 인용했다 — 인용 수치 전수 대조 결과는 `qa_transcript.md` 참고.
