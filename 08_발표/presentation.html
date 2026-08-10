@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>주택가격 분석 파이프라인 — 발표</title>
+<style>
+  :root{
+    --accent:#1F4E79; --neutral:#C8CDD3; --dark:#222; --alert:#B94A48;
+    --grid:#E6E8EB; --dim:#5A6470; --bg:#fff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Malgun Gothic','맑은 고딕',sans-serif;background:#3a3f47;color:var(--dark);
+       -webkit-font-smoothing:antialiased}
+
+  .deck{width:100vw;height:100vh;overflow:hidden;position:relative}
+  .slide{position:absolute;inset:0;background:var(--bg);padding:56px 72px 64px;
+         display:none;flex-direction:column;overflow:hidden}
+  .slide.on{display:flex}
+
+  h1{font-size:52px;line-height:1.25;letter-spacing:-.5px}
+  h2{font-size:32px;line-height:1.3;letter-spacing:-.3px;margin-bottom:6px}
+  .sub{font-size:15px;color:var(--dim);margin-bottom:26px}
+  .rule{height:3px;background:var(--accent);width:64px;margin:14px 0 26px}
+
+  /* 표지 */
+  .cover{justify-content:center}
+  .cover .eyebrow{font-size:15px;color:var(--dim);letter-spacing:2px;margin-bottom:20px}
+  .cover h1{font-size:60px}
+  .cover .accent{color:var(--accent)}
+  .cover .meta{margin-top:44px;font-size:15px;color:var(--dim);line-height:1.9}
+
+  /* 레이아웃 */
+  .body{flex:1;display:flex;gap:34px;min-height:0}
+  .col{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+  .fig{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;min-width:0}
+  .fig img{max-width:100%;max-height:100%;object-fit:contain}
+  .fig.wide{flex:1.55}
+
+  /* KPI */
+  .kpis{display:flex;gap:20px;margin:8px 0 22px}
+  .kpi{flex:1;border-left:4px solid var(--accent);padding:6px 0 6px 16px}
+  .kpi .n{font-size:36px;font-weight:700;color:var(--accent);line-height:1.15}
+  .kpi .l{font-size:13px;color:var(--dim);margin-top:5px;line-height:1.5}
+
+  /* 표 */
+  table{width:100%;border-collapse:collapse;font-size:15px}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--grid)}
+  th{font-size:12.5px;color:var(--dim);font-weight:600;letter-spacing:.3px}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  tr.hl td{background:#F2F6FA;font-weight:700;color:var(--accent)}
+  tr.mute td{color:#8A929B}
+
+  /* 리스트 */
+  ul{list-style:none;font-size:17px;line-height:1.95}
+  ul li{padding-left:20px;position:relative;margin-bottom:6px}
+  ul li:before{content:'';position:absolute;left:0;top:13px;width:7px;height:7px;
+               border-radius:50%;background:var(--neutral)}
+  ul li.key:before{background:var(--accent)}
+  ul li.key{font-weight:700}
+  b{color:var(--accent)}
+  .warn b{color:var(--alert)}
+
+  /* 파이프라인 */
+  .pipe{display:flex;gap:9px;margin:14px 0 26px}
+  .step{flex:1;background:#F5F7F9;border-top:3px solid var(--neutral);padding:14px 12px;
+        border-radius:3px}
+  .step.on{border-top-color:var(--accent);background:#EDF3F9}
+  .step .no{font-size:11px;color:var(--dim);letter-spacing:1px}
+  .step .nm{font-size:14.5px;font-weight:700;margin:5px 0 3px;line-height:1.35}
+  .step .tool{font-size:11.5px;color:var(--dim)}
+
+  /* 인용/결론 박스 */
+  .quote{border-left:4px solid var(--accent);background:#F5F8FB;padding:20px 24px;
+         font-size:20px;line-height:1.7;margin-top:auto}
+  .quote.alert{border-left-color:var(--alert);background:#FBF4F4}
+  .note{font-size:13.5px;color:var(--dim);line-height:1.7;margin-top:12px}
+
+  /* 캡션 */
+  .cap{font-size:12.5px;color:#8A929B;text-align:center;margin-top:8px}
+
+  /* 푸터 */
+  .foot{position:absolute;left:72px;right:72px;bottom:22px;display:flex;
+        justify-content:space-between;font-size:11.5px;color:#9AA1A9;
+        border-top:1px solid var(--grid);padding-top:9px}
+
+  /* 진행 바 */
+  .prog{position:fixed;top:0;left:0;height:3px;background:var(--accent);z-index:50;
+        transition:width .25s ease}
+  .hint{position:fixed;right:16px;bottom:14px;font-size:11px;color:#fff;opacity:.35;z-index:50}
+  @media print{.prog,.hint{display:none}
+    .slide{display:flex!important;position:relative;page-break-after:always;height:100vh}}
+</style>
+</head>
+<body>
+<div class="prog" id="prog"></div>
+<div class="hint">← → 또는 스페이스로 이동 · F 전체화면</div>
+<div class="deck" id="deck">
+
+<!-- 1 표지 -->
+<section class="slide cover on">
+  <div class="eyebrow">영등포8기 AI 개발자 과정 · 종합 실습과제</div>
+  <h1>주택가격 분석<br><span class="accent">엔드-투-엔드 파이프라인</span></h1>
+  <div class="rule"></div>
+  <div class="meta">
+    Ames Housing 실거래 1,460건 · EDA에서 로컬 LLM 연동까지 7단계<br>
+    2026-07-31 · github.com/dariajkim-star/housingprice
+  </div>
+</section>
+
+<!-- 2 데이터 -->
+<section class="slide">
+  <h2>다루는 데이터</h2>
+  <div class="sub">미국 아이오와주 Ames 지역 주택 실거래 기록</div>
+  <div class="kpis">
+    <div class="kpi"><div class="n">1,460</div><div class="l">거래 건수</div></div>
+    <div class="kpi"><div class="n">16 + 1</div><div class="l">feature + 목표변수(SalePrice)</div></div>
+    <div class="kpi"><div class="n">0</div><div class="l">결측치</div></div>
+    <div class="kpi"><div class="n">$180,921</div><div class="l">평균 판매가</div></div>
+  </div>
+  <div class="body">
+    <div class="col">
+      <ul>
+        <li class="key">원본 80개 feature를 <b>16개로 감축한 버전</b>을 사용</li>
+        <li>감축 기준: SalePrice와의 상관, 결측 50% 이상 컬럼 제외</li>
+        <li class="key">단, <b>서로 중복되는 강상관 쌍은 의도적으로 남겨둠</b><br>
+            → 다중공선성 진단이 과제 2의 학습 목표</li>
+        <li>원본 81컬럼 파일도 함께 보관 — 이상치 진단에 결정적으로 사용</li>
+      </ul>
+    </div>
+    <div class="fig"><img src="../01_시각화/images/01_saleprice_hist.png" alt="SalePrice 분포"></div>
+  </div>
+  <div class="foot"><span>주택가격 분석 파이프라인</span><span>데이터</span></div>
+</section>
+
+<!-- 3 파이프라인 -->
+<section class="slide">
+  <h2>7단계 파이프라인</h2>
+  <div class="sub">각 과제의 결과물이 다음 과제의 입력이 되는 사슬 구조</div>
+  <div class="pipe">
+    <div class="step on"><div class="no">01</div><div class="nm">시각화</div><div class="tool">pandas · seaborn</div></div>
+    <div class="step on"><div class="no">02</div><div class="nm">다중공선성 제거</div><div class="tool">numpy VIF</div></div>
+    <div class="step on"><div class="no">03</div><div class="nm">회귀 모델링</div><div class="tool">Orange · sklearn</div></div>
+    <div class="step"><div class="no">04</div><div class="nm">BI 시각화</div><div class="tool">Power BI</div></div>
+    <div class="step"><div class="no">05</div><div class="nm">영향 요인</div><div class="tool">Key Influencers</div></div>
+    <div class="step"><div class="no">06</div><div class="nm">웹 대시보드</div><div class="tool">Chart.js</div></div>
+    <div class="step"><div class="no">07</div><div class="nm">LLM 연동</div><div class="tool">Ollama</div></div>
+  </div>
+  <div class="body">
+    <div class="col">
+      <table>
+        <tr><th>단계</th><th>넘겨주는 산출물</th></tr>
+        <tr><td>01 → 02</td><td>상관 상위 feature · 이상치 후보 2건</td></tr>
+        <tr class="hl"><td>02 → 03·04·06</td><td>공선성 제거 확정 feature 세트 (공통 입력)</td></tr>
+        <tr><td>03 → 05</td><td>최적 모델과 변수 중요도</td></tr>
+        <tr><td>04 → 05</td><td>SalePrice 등급(High/Low) 계산 열</td></tr>
+        <tr><td>06 → 07</td><td>대시보드 요약 통계 → LLM system 프롬프트</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="quote">
+    한 곳의 판단이 <b>뒤 단계 전체</b>에 전파된다.<br>
+    그래서 각 단계마다 "왜 그렇게 했는가"를 데이터로 증명해야 했다.
+  </div>
+  <div class="foot"><span>주택가격 분석 파이프라인</span><span>구조</span></div>
+</section>
+
+<!-- 4 과제1 -->
+<section class="slide">
+  <h2>① 탐색적 분석 — 무엇이 가격을 설명하는가</h2>
+  <div class="sub">그래프 7종 · 모든 제목의 수치는 코드가 계산해 주입 (하드코딩 없음)</div>
+  <div class="body">
+    <div class="fig wide"><img src="../01_시각화/images/04_bar_neighborhood.png" alt="지역별 평균가"></div>
+    <div class="col">
+      <ul>
+        <li class="key">SalePrice 왜도 <b>1.88</b> → log 변환 후 <b>0.12</b></li>
+        <li class="key">상관 최상위 <b>OverallQual 0.79</b> · <b>GrLivArea 0.71</b></li>
+        <li class="key">지역 간 평균가 <b>최대 3.4배</b> 격차</li>
+        <li>품질 1→10 구간 중앙값 <b>8.6배</b> 상승 (전 등급 단조 증가, Spearman ρ=0.81)</li>
+      </ul>
+      <div class="note">
+        표본 20건 미만 지역 6곳(Blueste n=2, Veenker n=11 등)은 평균이 불안정하므로
+        회색 라벨 처리하고 강조에서 제외했다. 표본 수를 숨기면 그래프가 거짓말을 한다.
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>과제 1 · 시각화</span><span>15점</span></div>
+</section>
+
+<!-- 5 과제2 -->
+<section class="slide">
+  <h2>② 다중공선성 — 중복 정보를 걷어내다</h2>
+  <div class="sub">상관 |r| ≥ 0.8 기준으로 3쌍 발견 · VIF는 numpy로 직접 구현</div>
+  <div class="body">
+    <div class="col">
+      <table>
+        <tr><th>공선 쌍</th><th class="num">r</th><th>유지 → 제거</th></tr>
+        <tr><td>GarageCars ↔ GarageArea</td><td class="num">0.882</td><td>GarageCars → <b>GarageArea</b></td></tr>
+        <tr><td>GrLivArea ↔ TotRmsAbvGrd</td><td class="num">0.825</td><td>GrLivArea → <b>TotRmsAbvGrd</b></td></tr>
+        <tr><td>TotalBsmtSF ↔ 1stFlrSF</td><td class="num">0.820</td><td>TotalBsmtSF → <b>1stFlrSF</b></td></tr>
+      </table>
+      <div class="note">
+        각 쌍에서 SalePrice와의 상관이 낮은 쪽을 제거했다.<br>
+        한 쌍씩 제거하며 상관을 재계산하는 순차 방식과 결과가 같은지 코드로 검증했다.
+      </div>
+      <div class="quote" style="margin-top:22px;font-size:18px">
+        문제지 기준은 "VIF &gt; 10"이지만 <b>해당 변수는 0개</b>(최대 5.31).<br>
+        실제 제거 근거는 상관이고, <b>VIF는 사후 검증 지표</b>로 사용했다.
+      </div>
+    </div>
+    <div class="fig wide"><img src="../02_다중공선성/images/04_vif_before_after.png" alt="VIF 전후"></div>
+  </div>
+  <div class="foot"><span>과제 2 · 다중공선성</span><span>20점</span></div>
+</section>
+
+<!-- 6 과제3 -->
+<section class="slide">
+  <h2>③ 회귀 모델 5종 비교</h2>
+  <div class="sub">Orange 워크플로우 + scikit-learn 재현 · 5-fold 교차검증</div>
+  <div class="body">
+    <div class="fig wide"><img src="../03_orange/images/01_model_comparison.png" alt="모델 비교"></div>
+    <div class="col">
+      <ul>
+        <li class="key">트리 계열이 선형 대비 <b>R² +0.03</b> 우위</li>
+        <li>품질-가격 관계가 직선이 아니라 <b>8등급부터 급해지는 곡선</b>이기 때문</li>
+        <li class="key">단, 상위 3개 모델의 <b>오차막대가 서로 겹친다</b></li>
+        <li>안정성은 kNN(±0.075)이 RF(±0.137)의 절반 수준</li>
+      </ul>
+      <div class="note">
+        "R² 1위"만으로 단정하지 않고 <b>평균 성능과 안정성을 함께</b> 제시했다.
+        종합 균형을 기준으로 Random Forest를 선정.
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>과제 3 · 회귀모델</span><span>20점</span></div>
+</section>
+
+<!-- 7 발견1 이상치 -->
+<section class="slide">
+  <h2>발견 ① — 이상치 2건의 정체</h2>
+  <div class="sub">품질 10등급인데 시세 절반에 팔린 집. 원본 81컬럼을 열어보니 답이 있었다</div>
+  <div class="body">
+    <div class="fig wide"><img src="../01_시각화/images/03_scatter_grlivarea.png" alt="산점도 이상치"></div>
+    <div class="col">
+      <table>
+        <tr><th></th><th>Id 524</th><th>Id 1299</th></tr>
+        <tr class="hl"><td>SaleCondition</td><td>Partial</td><td>Partial</td></tr>
+        <tr><td>면적</td><td>4,676 sqft</td><td>5,642 sqft</td></tr>
+        <tr><td>판매가</td><td>$184,750</td><td>$160,000</td></tr>
+        <tr><td>평당가</td><td>$39.5</td><td>$28.4</td></tr>
+        <tr class="mute"><td>전체 평당가 중앙값</td><td colspan="2">$120.1</td></tr>
+      </table>
+      <div class="note warn">
+        <b>Partial = 마지막 평가 시점에 완공되지 않은 상태.</b>
+        기록된 가격이 완성 주택의 시장가가 아니다.<br><br>
+        감축본 16개 feature에 <b>SaleCondition이 없어</b> 모델은 정상 거래와
+        구별할 정보 자체가 없다 — 학습에 노이즈로만 작용한다.<br><br>
+        데이터셋 원저자 <b>De Cock(2011)도 GrLivArea &gt; 4000 제거를 권고</b>한다.
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>핵심 발견</span><span>1 / 2</span></div>
+</section>
+
+<!-- 8 성능개선 -->
+<section class="slide">
+  <h2>2건을 빼자 R²가 0.808 → 0.895</h2>
+  <div class="sub">전체 1,460건 중 0.14% · 개선폭의 92%가 이 한 단계에서 나왔다</div>
+  <div class="body">
+    <div class="fig wide"><img src="../03_orange/images/04_gb_improvement_stages.png" alt="단계별 개선"></div>
+    <div class="col">
+      <table>
+        <tr><th>단계</th><th class="num">R²</th><th class="num">증가</th></tr>
+        <tr><td>기본 GB</td><td class="num">0.8079</td><td class="num">—</td></tr>
+        <tr class="hl"><td>+ 이상치 2건 제거</td><td class="num">0.8954</td><td class="num">+0.088</td></tr>
+        <tr><td>+ 파생변수 8종</td><td class="num">0.8997</td><td class="num">+0.004</td></tr>
+        <tr><td>+ TargetEncoder</td><td class="num">0.8994</td><td class="num">-0.000</td></tr>
+        <tr class="hl"><td>+ 하이퍼파라미터 튜닝</td><td class="num">0.9041</td><td class="num">+0.005</td></tr>
+      </table>
+      <div class="note">
+        과적합 갭(Train − Test R²)은 <b>0.144 → 0.062로 감소</b>.<br>
+        성능 상승이 과적합으로 만든 숫자가 아님을 확인했다.
+      </div>
+    </div>
+  </div>
+  <div class="quote">
+    파생변수 · 인코딩 · 하이퍼파라미터를 <b>전부 합쳐도 +0.008</b>.<br>
+    화려한 기법보다 원본 데이터를 들여다본 시간이 결정적이었다.
+  </div>
+  <div class="foot"><span>핵심 발견</span><span>1 / 2</span></div>
+</section>
+
+<!-- 9 과제4/5 -->
+<section class="slide">
+  <h2>④⑤ Power BI — 시각 개체와 영향 요인</h2>
+  <div class="sub">시각 개체 5종 + Key Influencers · 파이썬 차트와 동일한 색 언어 적용</div>
+  <div class="body">
+    <div class="fig"><img src="../04_powerbi/images/report_page.png" alt="Power BI 보고서"></div>
+    <div class="fig"><img src="../05_key_influencers/images/key_influencers.png" alt="Key Influencers"></div>
+  </div>
+  <div class="quote" style="font-size:18px">
+    지역별 평균가 순위가 <b>Python과 Power BI에서 25개 지역 모두 일치</b> —
+    서로 다른 도구가 같은 답을 내는지 교차 검증했다.
+  </div>
+  <div class="foot"><span>과제 4·5 · Power BI</span><span>25점</span></div>
+</section>
+
+<!-- 10 발견2 교란 -->
+<section class="slide">
+  <h2>발견 ② — 1위 요인을 의심하다</h2>
+  <div class="sub">Key Influencers가 "중앙냉방"을 1위(7.21배)로 지목했다. 그대로 써도 될까?</div>
+  <div class="body">
+    <div class="col">
+      <table>
+        <tr><th></th><th class="num">냉방 없음</th><th class="num">냉방 있음</th></tr>
+        <tr><td>건수</td><td class="num">95건 (6.5%)</td><td class="num">1,365건</td></tr>
+        <tr><td>High 비율</td><td class="num">7.37%</td><td class="num">53.11%</td></tr>
+        <tr class="hl"><td>건축연도 중앙값</td><td class="num">1925년</td><td class="num">1976년</td></tr>
+        <tr class="hl"><td>1950년 이전 건축</td><td class="num">81%</td><td class="num">18%</td></tr>
+        <tr><td>품질 평균</td><td class="num">4.67</td><td class="num">6.20</td></tr>
+        <tr><td>면적 중앙값</td><td class="num">1,134 sqft</td><td class="num">1,473 sqft</td></tr>
+      </table>
+      <div class="note">배수 검산: 53.11% ÷ 7.37% = <b>7.21배</b> — 화면 수치와 정확히 일치</div>
+    </div>
+    <div class="col">
+      <ul>
+        <li class="key">중앙냉방은 <b>1970년대 이후 신축의 표준 사양</b></li>
+        <li class="key">따라서 "냉방 없음" = 사실상 <b>"1950년 이전에 지은 노후 주택"</b>의 표시등</li>
+        <li>가격을 낮추는 진짜 원인은 <b>노후 · 저품질 · 소형</b></li>
+        <li>표본도 6.5%뿐이라 배수가 과장되기 쉬운 구조</li>
+      </ul>
+      <div class="quote alert" style="margin-top:22px;font-size:18px">
+        "냉방을 설치하면 7배 비싸진다"로 읽으면 <b>틀린 결론</b>.<br>
+        Key Influencers는 상관을 정량화하는 도구이지 <b>인과를 증명하지 않는다.</b>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>핵심 발견</span><span>2 / 2</span></div>
+</section>
+
+<!-- 11 과제6/7 -->
+<section class="slide">
+  <h2>⑥⑦ 웹 대시보드와 로컬 LLM 연동</h2>
+  <div class="sub">Chart.js 정적 대시보드 + Ollama 채팅 — 서버 없이 파일 하나로 동작</div>
+  <div class="body">
+    <div class="fig wide"><img src="../07_ollama/images/dashboard_chat.png" alt="Ollama 대시보드"></div>
+    <div class="col">
+      <ul>
+        <li>KPI 3종 · 차트 3종 · 필터 2종, 데이터는 JS로 인라인 임베드</li>
+        <li class="key">질문 시 <b>현재 필터 상태와 요약 통계</b>를 system 프롬프트에 동봉</li>
+        <li class="key">모델 2종 검증 — <b>gpt-oss:20b</b> · <b>llama3.2</b></li>
+      </ul>
+      <div class="note">
+        <b>검증:</b> 지역 필터를 NridgHt로 바꾸고 질문하자, 모델이 전체 평균 $180,921이 아니라
+        <b>해당 지역 평균 $316,271</b>과 지역 내 품질별 중앙값을 인용했다.<br>
+        인용 수치 6개 전부 실제 데이터와 일치 — 필터 상태가 실제로 전달됨을 입증.
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>과제 6·7 · 대시보드 + LLM</span><span>20점</span></div>
+</section>
+
+<!-- 12 교차검증 -->
+<section class="slide">
+  <h2>도구를 바꿔가며 교차 검증했다</h2>
+  <div class="sub">같은 결론이 나오면 신뢰의 근거, 다른 결론이 나오면 그 자체가 분석 소재</div>
+  <div class="body">
+    <div class="col">
+      <table>
+        <tr><th>확인 항목</th><th>결과</th></tr>
+        <tr class="hl"><td>최상위 설명 변수</td>
+            <td>Python 상관 · Orange 회귀 · Power BI Key Influencers<br>→ 모두 OverallQual · GrLivArea 지목</td></tr>
+        <tr class="hl"><td>지역별 평균가 순위</td><td>Python과 Power BI 25개 지역 순서 <b>완전 일치</b></td></tr>
+        <tr><td>Orange vs sklearn (트리·선형)</td><td>차이 0.005 ~ 0.015 — 사실상 동일</td></tr>
+        <tr class="mute"><td>Orange vs sklearn (kNN)</td><td>0.634 vs 0.820 — <b style="color:#B94A48">0.186 차</b></td></tr>
+      </table>
+      <div class="note">
+        <b>kNN만 어긋난 이유:</b> Orange의 kNN 위젯은 입력을 표준화하지 않는다.
+        LotArea(수천~수만 단위)가 거리 계산을 독점하면서 OverallQual(1~10)의 기여가 묻혔다.
+        트리 계열이 영향받지 않은 것이 이 설명을 뒷받침한다 — 분기는 값의 순서에만 의존하므로.
+      </div>
+    </div>
+    <div class="fig"><img src="../03_orange/images/orange_03_test_and_score.png" alt="Orange 결과"></div>
+  </div>
+  <div class="foot"><span>검증</span><span>방법론</span></div>
+</section>
+
+<!-- 13 시각화 원칙 -->
+<section class="slide">
+  <h2>시각화 — 하나의 색 언어로 통일</h2>
+  <div class="sub">파이썬 7종 · HTML 3종 · Power BI 5종에 동일한 규칙 적용</div>
+  <div class="body">
+    <div class="col">
+      <table>
+        <tr><th>색</th><th>의미</th></tr>
+        <tr><td><span style="display:inline-block;width:44px;height:14px;background:#C8CDD3;
+                 vertical-align:middle;margin-right:10px"></span>회색</td><td>일반 데이터 (맥락)</td></tr>
+        <tr><td><span style="display:inline-block;width:44px;height:14px;background:#1F4E79;
+                 vertical-align:middle;margin-right:10px"></span>남색</td><td>핵심 강조</td></tr>
+        <tr><td><span style="display:inline-block;width:44px;height:14px;background:#B94A48;
+                 vertical-align:middle;margin-right:10px"></span>빨강</td><td>이상치 · 주의 (남용 금지)</td></tr>
+      </table>
+      <ul style="margin-top:24px">
+        <li class="key">범주마다 다른 색을 쓰는 <b>무지개 팔레트 전면 제거</b><br>
+            순서형 변수는 단일 색조 그라데이션으로</li>
+        <li class="key">제목은 차트 종류가 아니라 <b>데이터에서 확인된 결론</b>을 서술</li>
+        <li>제목의 모든 수치는 코드 계산값을 주입 — 하드코딩 없음</li>
+        <li>표본이 적은 범주는 강조에서 제외하고 회색 처리</li>
+      </ul>
+    </div>
+    <div class="fig"><img src="../01_시각화/images/02b_qual_median_range.png" alt="품질별 중앙값"></div>
+  </div>
+  <div class="quote" style="font-size:18px">
+    "OverallQual별 SalePrice 박스플롯" → <b>"품질 7→8 구간에서 가격 중앙값 35% 급등"</b><br>
+    <span style="font-size:15px;color:var(--dim)">제목만 읽어도 결론이 전달되어야 한다.</span>
+  </div>
+  <div class="foot"><span>시각화 원칙</span><span>전 산출물 공통</span></div>
+</section>
+
+<!-- 14 마무리 -->
+<section class="slide">
+  <h2>정리</h2>
+  <div class="sub">과제 1~7 완주 · 배점 100점 분 산출물</div>
+  <div class="kpis">
+    <div class="kpi"><div class="n">0.9041</div><div class="l">최종 R² (Gradient Boosting)</div></div>
+    <div class="kpi"><div class="n">5.31 → 2.81</div><div class="l">최대 VIF</div></div>
+    <div class="kpi"><div class="n">3.4배</div><div class="l">지역 간 평균가 격차</div></div>
+    <div class="kpi"><div class="n">7종</div><div class="l">사용 도구</div></div>
+  </div>
+  <div class="body">
+    <div class="col">
+      <ul>
+        <li class="key"><b>데이터 진단이 기법 튜닝을 이긴다.</b><br>
+            성능 개선폭의 92%가 이상치 2건 제거에서 나왔다.</li>
+        <li class="key"><b>1위 결과를 의심하는 습관이 분석의 질을 만든다.</b><br>
+            CentralAir를 그대로 옮겼다면 틀린 결론이 됐을 것이다.</li>
+        <li class="key"><b>도구를 바꿔가며 대조하면 신뢰가 쌓인다.</b><br>
+            어긋난 지점(kNN)조차 새로운 분석 소재가 됐다.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="quote">
+    분석의 가치는 <b>숫자를 만드는 데</b> 있지 않고<br>
+    <b>그 숫자를 믿어도 되는 이유를 대는 데</b> 있다.
+  </div>
+  <div class="foot"><span>주택가격 분석 파이프라인</span><span>github.com/dariajkim-star/housingprice</span></div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  var slides = document.querySelectorAll('.slide');
+  var i = 0;
+  function show(n){
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle('on', k === i); });
+    document.getElementById('prog').style.width = ((i+1)/slides.length*100) + '%';
+  }
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); show(i+1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i-1); }
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(slides.length-1);
+    else if (e.key === 'f' || e.key === 'F') {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen();
+    }
+  });
+  document.getElementById('deck').addEventListener('click', function(e){
+    show(e.clientX < window.innerWidth * 0.25 ? i-1 : i+1);
+  });
+  show(0);
+})();
+</script>
+</body>
+</html>
