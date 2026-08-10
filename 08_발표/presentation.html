@@ -147,19 +147,16 @@
   </div>
   <div class="body">
     <div class="col">
-      <table>
-        <tr><th>단계</th><th>넘겨주는 산출물</th></tr>
-        <tr><td>01 → 02</td><td>상관 상위 feature · 이상치 후보 2건</td></tr>
-        <tr class="hl"><td>02 → 03·04·06</td><td>공선성 제거 확정 feature 세트 (공통 입력)</td></tr>
-        <tr><td>03 → 05</td><td>최적 모델과 변수 중요도</td></tr>
-        <tr><td>04 → 05</td><td>SalePrice 등급(High/Low) 계산 열</td></tr>
-        <tr><td>06 → 07</td><td>대시보드 요약 통계 → LLM system 프롬프트</td></tr>
+      <table style="font-size:16px">
+        <tr><th>핵심 연결</th><th>넘겨주는 것</th></tr>
+        <tr class="hl"><td>02 → 03 · 04 · 06</td><td>공선성 제거 확정 feature 세트 &nbsp;<span style="font-weight:400;color:var(--dim)">— 공통 입력</span></td></tr>
+        <tr><td>01 → 03</td><td>이상치 후보 2건</td></tr>
+        <tr><td>06 → 07</td><td>대시보드 요약 통계 → LLM 프롬프트</td></tr>
       </table>
     </div>
   </div>
   <div class="quote">
-    한 곳의 판단이 <b>뒤 단계 전체</b>에 전파된다.<br>
-    그래서 각 단계마다 "왜 그렇게 했는가"를 데이터로 증명해야 했다.
+    한 곳의 판단이 <b>뒤 단계 전체</b>에 전파된다.
   </div>
   <div class="foot"><span>주택가격 분석 파이프라인</span><span>구조</span></div>
 </section>
